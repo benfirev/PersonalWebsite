@@ -272,3 +272,40 @@ li {
         justify-content: center; /* Center align */
     }
 }
+
+.image-row {
+    display: flex; /* Arrange children in a row */
+    flex-wrap: wrap; /* Allow wrapping to next row if necessary */
+    justify-content: center; /* Space between items */
+    gap: 30px; /* Space between image-caption containers */
+    margin: 20px 0; /* Space above and below the row */
+}
+
+/* Individual image-caption container */
+.image-caption-container {
+    display: flex;
+    flex-direction: column; /* Stack image and caption vertically */
+    align-items: center; /* Center align both image and caption */
+    max-width: 48%; /* Set max width to allow two to fit in a row */
+    margin: 10px 0; /* Add space above and below */
+}
+
+.image-caption-container img {
+    max-width: 395px; /* Ensure image is responsive */
+    height: auto; /* Maintain aspect ratio */
+    border-radius: 5px; /* Optional: Rounded corners */
+    border: 2px solid #2c2c2c; /* Optional: Border for image */
+}
+
+.image-caption-container .caption {
+    margin-top: 10px; /* Space between image and caption */
+    font-size: 16px; /* Caption font size */
+    color: #b3b3b3; /* Caption text color */
+    text-align: center; /* Center-align the caption text */
+    font-style: italic; /* Optional: Make caption italic */
+}
+@media (max-width: 768px) {
+    .image-caption-container {
+        max-width: 100%; /* Full width on small screens */
+    }
+}
