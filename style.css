@@ -199,7 +199,10 @@ li {
 .teaching-list li::marker {
     color: #ff6347;
 }
+.office-location {
+    color: #c8b89a;
 
+}
 
 
 /* === Media Queries for Mobile Responsiveness === */
