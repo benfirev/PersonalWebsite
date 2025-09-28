@@ -217,7 +217,7 @@ window.addEventListener('load', function() {
     controls.dampingFactor = 0.05;
     controls.enableZoom = true; // Allow zoom with scroll wheel
     controls.enableRotate = true; // Allow rotation with mouse drag
-    controls.enablePan = true; // Allow panning with right mouse button
+    controls.enablePan = false; // Allow panning with right mouse button
     controls.minDistance = 1.7; // Minimum zoom distance
     controls.maxDistance = 10; // Maximum zoom distance
     
@@ -451,14 +451,14 @@ window.addEventListener('load', function() {
         
         document.body.appendChild(infoWindow);
         
-        // Auto-hide on mobile after 3 seconds
-        if (isMobile) {
-            setTimeout(() => {
-                if (infoWindow) {
-                    hideInfoWindow();
-                }
-            }, 3000);
-        }
+        // // Auto-hide on mobile after 3 seconds
+        // if (isMobile) {
+        //     setTimeout(() => {
+        //         if (infoWindow) {
+        //             hideInfoWindow();
+        //         }
+        //     }, 3000);
+        // }
     }
     
     function hideInfoWindow() {
