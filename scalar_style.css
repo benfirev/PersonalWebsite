@@ -1,4 +1,17 @@
 /* General Reset and Body */
+* {
+    box-sizing: border-box; /* Ensure all elements include padding and border in their width */
+}
+
+html {
+    height: 100%;
+    height: 100dvh; /* Use dynamic viewport height when supported */
+    overflow: hidden;
+    -webkit-text-size-adjust: none; /* Prevent iOS text scaling */
+    -ms-text-size-adjust: none;
+    touch-action: manipulation; /* Prevent zoom on touch */
+}
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -8,7 +21,10 @@ body {
     display: flex;
     flex-direction: row;
     height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height when supported */
     overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* Window Container */
@@ -27,11 +43,15 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    width: 550px;
+    width: min(550px, 40vw); /* Responsive width with max 550px */
+    max-width: 550px;
+    min-width: 300px; /* Minimum width for usability */
     background-color: #1f1f1f;
     padding: 20px;
     height: 100vh;
+    height: 100dvh; /* Use dynamic viewport height when supported */
     overflow-y: auto;
+    box-sizing: border-box; /* Include padding in width calculation */
 }
 
 /* Window Header */
@@ -66,7 +86,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    min-width: fit-content;
+    min-width: 0; /* Allow flex shrinking */
+    width: 100%;
 }
 
 .input-row {
@@ -223,7 +244,8 @@ body {
 }
 
 .color-gradient {
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
     height: 30px;
     border-radius: 4px;
     border: 1px solid #3c3c3c;
@@ -245,41 +267,76 @@ body {
     height: 100%;
 }
 
+/* === Desktop Responsiveness === */
+
+/* For screens smaller than 1200px (smaller desktops/laptops) */
+@media (max-width: 1200px) {
+    .controls-container {
+        width: min(450px, 35vw);
+        max-width: 450px;
+        padding: 16px;
+    }
+}
+
+/* For screens smaller than 1000px (tablets in landscape) */
+@media (max-width: 1000px) {
+    .controls-container {
+        width: min(400px, 40vw);
+        max-width: 400px;
+        padding: 14px;
+    }
+}
+
 /* === Mobile Responsiveness === */
 
 /* For screens smaller than 768px (tablet or mobile) */
 @media (max-width: 768px) {
     body {
         flex-direction: column;
-        height: auto;
-        min-height: 100vh;
-        overflow-y: auto;
+        height: 100vh;
+        height: 100dvh; /* Use dynamic viewport height when supported */
+        max-height: 100vh;
+        max-height: 100dvh;
+        overflow: hidden;
     }
     
     .window {
-        height: 60vh;
+        flex: 1;
+        min-height: 0; /* Allow flex shrinking */
         margin: 0;
         border-radius: 0;
         border-right: none;
         border-bottom: 2px solid #2c2c2c;
+        display: flex;
+        flex-direction: column;
     }
     
     .window-header {
-        padding: 12px 16px;
-        font-size: 16px;
+        padding: 10px 16px;
+        font-size: 14px;
         text-align: center;
+        flex-shrink: 0; /* Prevent header from shrinking */
     }
     
     .window-content {
-        height: calc(60vh - 41px);
+        flex: 1;
+        min-height: 0; /* Allow flex shrinking */
+        height: auto;
     }
     
     .controls-container {
         width: 100%;
-        height: 40vh;
-        padding: 16px;
-        gap: 16px;
+        max-width: none;
+        min-width: auto;
+        height: auto;
+        max-height: 45vh;
+        max-height: 45dvh;
+        padding: 12px;
+        gap: 12px;
         overflow-y: auto;
+        overflow-x: hidden; /* Prevent horizontal overflow */
+        flex-shrink: 0; /* Prevent controls from shrinking too much */
+        box-sizing: border-box;
     }
     
     .input-section {
@@ -361,7 +418,8 @@ body {
     }
     
     .color-gradient {
-        width: 250px;
+        width: 100%;
+        max-width: 250px;
         height: 32px;
     }
     
@@ -373,18 +431,18 @@ body {
 
 /* For screens smaller than 480px (small phones) */
 @media (max-width: 480px) {
-    .window {
-        height: 55vh;
-    }
-    
-    .window-content {
-        height: calc(55vh - 41px);
+    .window-header {
+        padding: 8px 12px;
+        font-size: 13px;
     }
     
     .controls-container {
-        height: 45vh;
-        padding: 12px;
-        gap: 12px;
+        max-height: 50vh;
+        max-height: 50dvh;
+        padding: 10px;
+        gap: 10px;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
     
     .input-section {
@@ -426,13 +484,56 @@ body {
     }
     
     .color-gradient {
-        width: 200px;
+        width: 100%;
+        max-width: 200px;
         height: 28px;
     }
     
     .color-label-left, .color-label-right {
         font-size: 14px;
         min-width: 30px;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+    .window-header {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    
+    .controls-container {
+        max-height: 55vh;
+        max-height: 55dvh;
+        padding: 8px;
+        gap: 8px;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+    
+    .input-section {
+        padding: 8px 10px;
+    }
+    
+    .color-gradient {
+        width: 100%;
+        max-width: 150px;
+        height: 24px;
+    }
+}
+
+/* Landscape orientation on mobile devices */
+@media (max-width: 768px) and (orientation: landscape) {
+    body {
+        height: 100vh;
+        height: 100dvh;
+    }
+    
+    .controls-container {
+        max-height: 60vh;
+        max-height: 60dvh;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
 }
 

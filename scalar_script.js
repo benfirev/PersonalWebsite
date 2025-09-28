@@ -240,21 +240,45 @@ window.addEventListener('load', function() {
     animate();
     
     // Handle window resize and mobile layout changes
+    let resizeTimeout;
     function updateCanvasSize() {
         const content = document.querySelector('.window-content');
+        if (!content) return;
+        
         const newWidth = content.clientWidth;
         const newHeight = content.clientHeight;
         
-        camera.aspect = newWidth / newHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(newWidth, newHeight);
+        // Only update if dimensions have actually changed and are valid
+        if (newWidth > 0 && newHeight > 0 && 
+            (Math.abs(camera.aspect - (newWidth / newHeight)) > 0.001 || 
+             Math.abs(renderer.domElement.width - newWidth) > 1 ||
+             Math.abs(renderer.domElement.height - newHeight) > 1)) {
+            
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(newWidth, newHeight);
+        }
     }
     
-    window.addEventListener('resize', updateCanvasSize);
+    // Debounced resize handler
+    function handleResize() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateCanvasSize, 16); // ~60fps
+    }
+    
+    window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', function() {
         // Delay to allow orientation change to complete
-        setTimeout(updateCanvasSize, 100);
+        setTimeout(updateCanvasSize, 200);
     });
+    
+    // Also listen for visual viewport changes (mobile browsers with dynamic UI)
+    if ('visualViewport' in window) {
+        window.visualViewport.addEventListener('resize', handleResize);
+    }
+    
+    // Initial canvas size update after everything is loaded
+    setTimeout(updateCanvasSize, 100);
     
     // Function validation
     const functionInput = document.getElementById('function-input');
