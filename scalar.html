@@ -7,11 +7,14 @@
     <link rel="stylesheet" href="scalar_style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="shortcut icon" href="Media/favicon.png"> 
 </head>
 <body>
     <div class="window">
         <div class="window-header">
+            <button class="home-button" onclick="window.location.href='index.html'">Home</button>
             <span>Scalar function graphing on the 2-Sphere</span>
+            
         </div>
         <div class="window-content">
             <canvas id="sphere-canvas"></canvas>
@@ -27,12 +30,7 @@
                 <span>-1≤h≤1, 0≤t≤2π</span>
             </div>
         </div>
-        <div class="toggle-section">
-            <label class="checkbox-label">
-                <input type="checkbox" id="north-pole-toggle" checked>
-                Toggle North Pole Indicator
-            </label>
-        </div>
+
         <div class="slider-section">
             <label for="normalization-slider">Function Color Normalization</label>
             <div class="slider-container">
@@ -45,6 +43,34 @@
                 <span class="color-label-right">1</span>
             </div>
         </div>
+
+        <div class="slider-section">
+            <label for="quality-slider">Sphere Quality</label>
+            <div class="slider-container">
+                <input type="range" id="quality-slider" min="0" max="3" step="1" value="1">
+                <span id="quality-value">128</span>
+            </div>
+            <div class="quality-warning">Higher Quality = Slower Graphing</div>
+        </div>
+
+        <div class="slider-section"> 
+            <!-- camera menu -->
+            <button class="reset-camera-button" onclick="resetCamera()">Reset Camera View</button>
+             <label class="checkbox-label">
+                <input type="checkbox" id="north-pole-toggle" checked>
+                Toggle North Pole Indicator
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="white-background-toggle">
+                White Background
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="auto-rotation-toggle">
+                Auto Rotation
+            </label>
+        </div>
+
+        
     </div>
     <script src="scalar_script.js"></script>
 </body>

@@ -9,7 +9,13 @@ window.addEventListener('load', function() {
     const HOVER_DOT_HEIGHT = 1.02;       // Height of hover dot above sphere surface
     const INFO_WINDOW_OFFSET_X = 10;     // Horizontal offset of info window from mouse (pixels)
     const INFO_WINDOW_OFFSET_Y = -60;    // Vertical offset of info window from mouse (pixels)
+    const DEFAULT_CAMERA_X = 0;          // Default camera X position
+    const DEFAULT_CAMERA_Y = -1.9;       // Default camera Y position
+    const DEFAULT_CAMERA_Z = 1.1;        // Default camera Z position
+    let SPHERE_QUALITY = 128;            // Sphere geometry quality (now variable for slider)
     let FUNCTION_NORMALIZATION = 1.5;    // Multiplier for function values in hue calculation
+    let AUTO_ROTATION_ENABLED = false;   // Auto rotation state
+    const ROTATION_SPEED = 0.005;         // Auto rotation speed (radians per frame)
     // ===================================
     
     // Scene setup
@@ -33,8 +39,8 @@ window.addEventListener('load', function() {
     camera.updateProjectionMatrix();
     renderer.setClearColor(0x121212);
     
-    // Create sphere geometry and material
-    const geometry = new THREE.SphereGeometry(1, 128, 128);
+    // Create sphere geometry and material (will be recreated when quality changes)
+    let geometry = new THREE.SphereGeometry(1, SPHERE_QUALITY, SPHERE_QUALITY);
     
     // Create material for function visualization
     const material = new THREE.MeshPhongMaterial({
@@ -44,7 +50,7 @@ window.addEventListener('load', function() {
     });
     
     // Create sphere mesh
-    const sphere = new THREE.Mesh(geometry, material);
+    let sphere = new THREE.Mesh(geometry, material);
     scene.add(sphere);
     
     // Add north pole indicator
@@ -208,7 +214,7 @@ window.addEventListener('load', function() {
     scene.add(directionalLight3);
     
     // Position camera
-    camera.position.set(0, -1.9, 1.1); // Looking from negative Y towards origin
+    camera.position.set(DEFAULT_CAMERA_X, DEFAULT_CAMERA_Y, DEFAULT_CAMERA_Z); // Looking from negative Y towards origin
     camera.lookAt(0, 0, 0); // Look at sphere center
     
     // Add orbit controls for mouse interaction
@@ -226,9 +232,52 @@ window.addEventListener('load', function() {
         hideInfoWindow();
     });
     
+    // Reset camera function (made global so HTML can access it)
+    window.resetCamera = function() {
+        // Animate camera back to default position
+        const startPosition = camera.position.clone();
+        const targetPosition = new THREE.Vector3(DEFAULT_CAMERA_X, DEFAULT_CAMERA_Y, DEFAULT_CAMERA_Z);
+        
+        // Reset controls target to origin
+        controls.target.set(0, 0, 0);
+        
+        // Smooth animation to default position
+        const duration = 1000; // 1 second
+        const startTime = Date.now();
+        
+        function animateReset() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Use easing function for smooth animation
+            const easedProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+            
+            // Interpolate position
+            camera.position.lerpVectors(startPosition, targetPosition, easedProgress);
+            camera.lookAt(0, 0, 0);
+            
+            // Update controls
+            controls.update();
+            
+            if (progress < 1) {
+                requestAnimationFrame(animateReset);
+            }
+        }
+        
+        animateReset();
+        
+        // Hide any visible info window
+        hideInfoWindow();
+    };
+    
     // Animation loop
     function animate() {
         requestAnimationFrame(animate);
+        
+        // Auto rotation
+        if (AUTO_ROTATION_ENABLED) {
+            sphere.rotation.z += ROTATION_SPEED;
+        }
         
         // Update controls
         controls.update();
@@ -588,6 +637,22 @@ window.addEventListener('load', function() {
         northPoleIndicator.visible = this.checked;
     });
     
+    // Add white background toggle functionality
+    const whiteBackgroundToggle = document.getElementById('white-background-toggle');
+    whiteBackgroundToggle.addEventListener('change', function() {
+        if (this.checked) {
+            renderer.setClearColor(0xffffff); // White background
+        } else {
+            renderer.setClearColor(0x121212); // Default dark background
+        }
+    });
+    
+    // Add auto-rotation toggle functionality
+    const autoRotationToggle = document.getElementById('auto-rotation-toggle');
+    autoRotationToggle.addEventListener('change', function() {
+        AUTO_ROTATION_ENABLED = this.checked;
+    });
+    
     // Add function normalization slider functionality
     const normalizationSlider = document.getElementById('normalization-slider');
     const normalizationValue = document.getElementById('normalization-value');
@@ -605,5 +670,54 @@ window.addEventListener('load', function() {
     });
 
     // Initialize color gradient on load
-    updateColorGradient();    console.log('3D Sphere loaded successfully!');
+    updateColorGradient();
+    
+    // Function to recreate sphere with new quality
+    function recreateSphere(newQuality) {
+        // Store current rotation
+        const currentRotation = sphere.rotation.clone();
+        
+        // Remove old sphere from scene
+        scene.remove(sphere);
+        
+        // Dispose of old geometry to free memory
+        geometry.dispose();
+        
+        // Create new geometry with updated quality
+        SPHERE_QUALITY = newQuality;
+        geometry = new THREE.SphereGeometry(1, SPHERE_QUALITY, SPHERE_QUALITY);
+        
+        // Create new sphere mesh
+        sphere = new THREE.Mesh(geometry, material);
+        
+        // Restore rotation
+        sphere.rotation.copy(currentRotation);
+        
+        scene.add(sphere);
+        
+        // Reapply current function visualization
+        const functionInput = document.getElementById('function-input');
+        updateSphereVisualization(functionInput.value);
+    }
+    
+    // Add quality slider functionality
+    const qualitySlider = document.getElementById('quality-slider');
+    const qualityValue = document.getElementById('quality-value');
+    
+    // Quality levels: 0=64, 1=128, 2=256, 3=512
+    const qualityLevels = [64, 128, 256, 512,1024];
+    
+    // Update display value while dragging (fast)
+    qualitySlider.addEventListener('input', function() {
+        const quality = qualityLevels[parseInt(this.value)];
+        qualityValue.textContent = quality.toString();
+    });
+
+    // Update sphere quality when slider is released (slower operation)
+    qualitySlider.addEventListener('change', function() {
+        const quality = qualityLevels[parseInt(this.value)];
+        recreateSphere(quality);
+    });
+    
+    console.log('3D Sphere loaded successfully!');
 });
