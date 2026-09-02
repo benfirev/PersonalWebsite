@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Dreidel Studio — Parametric Matrix Lofter</title>
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.84);
+            --panel-border: rgba(226, 232, 240, 0.85);
+            --card-bg: rgba(255, 255, 255, 0.72);
+            --card-border: rgba(226, 232, 240, 0.85);
+            --border-subtle: rgba(226, 232, 240, 0.7);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --input-bg: #ffffff;
+            --input-border: #e2e8f0;
+            --input-focus: #4f46e5;
+            --accent: #4f46e5;
+            --accent-subtle: rgba(79, 70, 229, 0.08);
+            --accent-hover: #4338ca;
+            --btn-primary-bg: #0f172a;
+            --btn-primary-hover: #1e293b;
+            --btn-primary-text: #ffffff;
+            --radius-xs: 6px;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 18px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-card: 0 4px 14px -2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+            --shadow-float: 0 20px 48px -10px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 25%, #ffffff 0%, #f1f5f9 65%, #e2e8f0 100%);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Modern Frosted Glass Sidebar */
+        .sidebar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 360px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            z-index: 10;
+            background: var(--panel-bg);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            box-shadow: var(--shadow-float);
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        /* Header Branding */
+        .header {
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 14px;
+        }
+
+        .brand-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .brand-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+            flex-shrink: 0;
+        }
+
+        .brand-text {
+            flex: 1;
+        }
+
+        .brand-text h1 {
+            font-size: 1.12rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .brand-text .brand-sub {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #059669;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 6px #10b981;
+        }
+
+        .brand-desc {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        /* Modern Card Component */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-card);
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: rgba(203, 213, 225, 0.9);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+        }
+
+        .det-indicator {
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: #059669;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        /* Modern 2x2 Matrix Editor */
+        .matrix-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 6px 0 12px 0;
+        }
+
+        .matrix-bracket {
+            font-size: 3.4rem;
+            font-weight: 200;
+            color: #cbd5e1;
+            line-height: 1;
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .matrix-cell {
+            position: relative;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s;
+        }
+
+        .matrix-cell:focus-within {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        .matrix-cell label {
+            position: absolute;
+            top: 5px;
+            left: 8px;
+            font-size: 0.62rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        .matrix-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 20px 8px 6px 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.86rem;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            user-select: text;
+        }
+
+        /* Preset Chips */
+        .presets-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .presets-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            background: #ffffff;
+            border: 1px solid var(--input-border);
+            color: var(--text-secondary);
+            padding: 6px 9px;
+            border-radius: var(--radius-xs);
+            font-size: 0.72rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.18s;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .preset-btn:hover {
+            background: #f8fafc;
+            color: var(--text-primary);
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+
+        .preset-btn.highlight {
+            border-color: #c7d2fe;
+            background: #eef2ff;
+            color: #4338ca;
+            font-weight: 600;
+        }
+
+        /* Form Controls */
+        .input-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 9px;
+            font-size: 0.78rem;
+        }
+
+        .input-row label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .input-row input[type="number"] {
+            width: 68px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius-xs);
+            padding: 5px 7px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            text-align: right;
+            user-select: text;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.15s;
+        }
+
+        .input-row input[type="number"]:focus {
+            outline: none;
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+        }
+
+        .range-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1.2;
+        }
+
+        .input-row input[type="range"] {
+            flex: 1;
+            height: 5px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* iOS-Style Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 19px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider-switch {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .25s;
+            border-radius: 20px;
+        }
+
+        .slider-switch:before {
+            position: absolute;
+            content: "";
+            height: 15px;
+            width: 15px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .25s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked + .slider-switch {
+            background-color: var(--accent);
+        }
+
+        input:checked + .slider-switch:before {
+            transform: translateX(15px);
+        }
+
+        /* Geometry Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .stat-item {
+            background: #ffffff;
+            border: 1px solid var(--border-subtle);
+            padding: 6px 9px;
+            border-radius: var(--radius-xs);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-val {
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        /* Action Buttons */
+        .actions-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-obj {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #0f172a;
+            color: #ffffff;
+            padding: 11px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-obj:hover {
+            background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.24);
+        }
+
+        .btn-copy {
+            background: #ffffff;
+            border: 1px solid var(--input-border);
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.15s;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-copy:hover {
+            background: #f8fafc;
+            color: var(--text-primary);
+            border-color: #cbd5e1;
+        }
+
+        /* Floating Viewport Toolbar (Sleek Pill) */
+        .viewport-bar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--panel-bg);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
+            border: 1px solid var(--panel-border);
+            padding: 6px 10px;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+            box-shadow: var(--shadow-float);
+        }
+
+        .vp-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.18s;
+        }
+
+        .vp-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke-width: 2.2;
+        }
+
+        .vp-btn:hover {
+            color: var(--text-primary);
+            background: rgba(15, 23, 42, 0.05);
+        }
+
+        .vp-btn.active {
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+        }
+
+        /* Floating Axis Legend */
+        .axis-legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            box-shadow: var(--shadow-float);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        /* Toast Feedback */
+        #toast {
+            position: absolute;
+            bottom: 84px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: #0f172a;
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: 24px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            z-index: 100;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+    <!-- Three.js + OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <!-- Floating Axis Legend -->
+    <div class="axis-legend">
+        <div class="legend-item">
+            <span class="legend-dot" style="background: #475569;"></span>
+            <span>Spindle: <strong>x = y = 0 Axis</strong> (Z-axis)</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-dot" style="background: #ef4444;"></span>
+            <span>X-Axis</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-dot" style="background: #10b981;"></span>
+            <span>Y-Axis</span>
+        </div>
+    </div>
+
+    <!-- Modern Light Sidebar -->
+    <aside class="sidebar">
+        <!-- Header Branding -->
+        <div class="header">
+            <div class="brand-row">
+                <div class="brand-badge">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path d="M12 2L2 22h20L12 2z"/>
+                        <circle cx="12" cy="14" r="2.2" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>Dreidel Studio</h1>
+                    <span class="brand-sub">Parametric M(t) Lofter</span>
+                </div>
+                <div class="status-pill">
+                    <span class="status-dot"></span>
+                    <span>Ready</span>
+                </div>
+            </div>
+            <p class="brand-desc">Lofting an equilateral triangle under matrix family M(t) from z=0 to z=H.</p>
+        </div>
+
+        <!-- 2x2 Matrix Definition Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Matrix Family M(t)</span>
+                <span class="det-indicator" id="det-indicator">det(0) = 1.00</span>
+            </div>
+
+            <div class="matrix-box">
+                <span class="matrix-bracket">[</span>
+                <div class="matrix-grid">
+                    <div class="matrix-cell">
+                        <label>M₀₀(t)</label>
+                        <input type="text" id="m00" class="matrix-input" value="(1-t)*cos(t*pi)" spellcheck="false">
+                    </div>
+                    <div class="matrix-cell">
+                        <label>M₀₁(t)</label>
+                        <input type="text" id="m01" class="matrix-input" value="(1-t^2)*-sin(t*pi)" spellcheck="false">
+                    </div>
+                    <div class="matrix-cell">
+                        <label>M₁₀(t)</label>
+                        <input type="text" id="m10" class="matrix-input" value="(1-t^2)*sin(t*pi)" spellcheck="false">
+                    </div>
+                    <div class="matrix-cell">
+                        <label>M₁₁(t)</label>
+                        <input type="text" id="m11" class="matrix-input" value="(1-t)*cos(t*pi)" spellcheck="false">
+                    </div>
+                </div>
+                <span class="matrix-bracket">]</span>
+            </div>
+
+            <div class="presets-label">Families (Starts at Identity, Ends at 0):</div>
+            <div class="presets-list">
+                <button class="preset-btn highlight" onclick="applyPreset('(1-t)*cos(t*pi)', '(1-t^2)*-sin(t*pi)', '(1-t^2)*sin(t*pi)', '(1-t)*cos(t*pi)')">Vortex Twist (Default)</button>
+                <button class="preset-btn" onclick="applyPreset('1 - t', '0', '0', '1 - t')">(1-t) · Id (Pyramid)</button>
+                <button class="preset-btn" onclick="applyPreset('(1-t)*cos(3*t*pi)', '-(1-t)*sin(3*t*pi)', '(1-t)*sin(3*t*pi)', '(1-t)*cos(3*t*pi)')">Triple Helix (3π)</button>
+                <button class="preset-btn" onclick="applyPreset('1 - t', '(1-t)*t*3*cos(t*pi)', '(1-t)*t*3*sin(t*pi)', '1 - t')">Swirling Shear Flare</button>
+                <button class="preset-btn" onclick="applyPreset('(1-t)*(1+0.5*sin(2*t*pi))*cos(t*pi)', '-(1-t^2)*sin(t*pi)', '(1-t^2)*sin(t*pi)', '(1-t)*(1-0.5*sin(2*t*pi))*cos(t*pi)')">Pulsing Star Vortex</button>
+                <button class="preset-btn" onclick="applyPreset('(1-t)*cos(2*t*pi)', '(1-t^2)*sin(t*pi)', '-(1-t^2)*sin(2*t*pi)', '(1-t)*cos(t*pi)')">Origami Razor Wave</button>
+                <button class="preset-btn" onclick="applyPreset('(1-t)^2*cos(1.5*t*pi)', '-(1-t)*sin(1.5*t*pi)', '(1-t)*sin(1.5*t*pi)', '(1-t)^2*cos(1.5*t*pi)')">Trumpet Flute</button>
+            </div>
+        </div>
+
+        <!-- Dimensions & Range Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Dimensions & Range</span>
+            </div>
+
+            <div class="input-row">
+                <label>t Range [start → end]</label>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    <input type="number" id="t-start" value="0.0" step="0.1" style="width: 58px;">
+                    <span style="color: var(--text-muted);">→</span>
+                    <input type="number" id="t-end" value="1.0" step="0.1" style="width: 58px;">
+                </div>
+            </div>
+
+            <div class="input-row">
+                <label>Base Radius R (mm)</label>
+                <input type="number" id="radius" value="25.0" min="1" max="200" step="1">
+            </div>
+
+            <div class="input-row">
+                <label>Total Height H (mm)</label>
+                <input type="number" id="height" value="50.0" min="5" max="500" step="1">
+            </div>
+
+            <div class="input-row">
+                <label>Layers (Smoothness)</label>
+                <div class="range-box">
+                    <input type="range" id="slices-slider" min="30" max="400" value="200" step="10">
+                    <span id="slices-val" style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; width: 32px; text-align: right; font-weight: 600;">200</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dreidel Mode Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Dreidel Mode</span>
+                <label class="switch" title="Toggle press-fit socket and printable stem">
+                    <input type="checkbox" id="dreidel-enabled" checked>
+                    <span class="slider-switch"></span>
+                </label>
+            </div>
+
+            <div id="dreidel-controls">
+                <div class="input-row">
+                    <label>Hole Diameter (mm)</label>
+                    <input type="number" id="hole-dia" value="4.5" min="2" max="25" step="0.5">
+                </div>
+
+                <div class="input-row">
+                    <label>Hole Depth (mm)</label>
+                    <input type="number" id="hole-depth" value="12.0" min="4" max="60" step="1">
+                </div>
+
+                <div class="input-row">
+                    <label>Hole & Stem Taper Angle (°)</label>
+                    <input type="number" id="taper-angle" value="45.0" min="20" max="75" step="1" title="Support-free conical taper for the hole ceiling and stem tip">
+                </div>
+
+                <div class="input-row">
+                    <label>Stem Total Length (mm)</label>
+                    <input type="number" id="stem-length" value="28.0" min="10" max="100" step="1">
+                </div>
+
+                <div class="input-row">
+                    <label>Fit Clearance (mm)</label>
+                    <input type="number" id="fit-clearance" value="0.2" min="0.0" max="0.8" step="0.05">
+                </div>
+
+                <button class="preset-btn" style="width: 100%; margin-top: 6px; text-align: center;" onclick="resetDreidelStandard()">Reset Standard Dreidel Stem</button>
+            </div>
+        </div>
+
+        <!-- Geometry Data Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Geometry Data</span>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">Faces: <span class="stat-val" id="stat-faces">0</span></div>
+                <div class="stat-item">Vertices: <span class="stat-val" id="stat-verts">0</span></div>
+                <div class="stat-item">Width (X): <span class="stat-val" id="stat-w">0 mm</span></div>
+                <div class="stat-item">Depth (Y): <span class="stat-val" id="stat-d">0 mm</span></div>
+                <div class="stat-item" style="grid-column: span 2;">Height (Z): <span class="stat-val" id="stat-h">0 mm</span></div>
+            </div>
+        </div>
+
+        <!-- Export Actions Box -->
+        <div class="actions-box">
+            <button id="btn-export-obj" class="btn-obj" onclick="downloadOBJ()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download Wavefront OBJ
+            </button>
+            <button class="btn-copy" onclick="copyPythonCode()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Python matrix_M(t) Function
+            </button>
+        </div>
+    </aside>
+
+    <!-- Floating Viewport Controls (Pill Toolbar) -->
+    <div class="viewport-bar">
+        <button id="btn-wire" class="vp-btn" title="Toggle wireframe mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l9 4.5v9L12 21l-9-4.5v-9L12 3z"/><path d="M12 12l9-4.5M12 12v9M12 12L3 7.5"/></svg>
+            Wireframe
+        </button>
+        <button id="btn-spin" class="vp-btn active" title="Toggle turntable auto-rotation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Spin
+        </button>
+        <button id="btn-mat" class="vp-btn" title="Cycle studio materials">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor"/></svg>
+            Material
+        </button>
+        <button id="btn-axis" class="vp-btn active" title="Toggle x=y=0 vertical axis spindle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+            Spindle
+        </button>
+        <button id="btn-reset" class="vp-btn" title="Reset to standard CAD perspective view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset
+        </button>
+    </div>
+
+    <div id="toast">Copied to clipboard</div>
+
+    <script>
+        // =====================================================================
+        // THREE.JS SETUP (STUDIO LIGHTING & STANDARD Z-UP PERSPECTIVE)
+        // =====================================================================
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.up.set(0, 0, 1); // Standard 3D CAD / Slicer Z-up orientation
+        camera.position.set(75, -95, 65); // Standard front-right isometric perspective
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, 22.0); // Focus on mid-height of dreidel
+
+        // Studio Illumination Setup
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.82);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xfffdf5, 0.85); // Warm key from front-right
+        keyLight.position.set(65, -75, 95);
+        scene.add(keyLight);
+
+        const fillLight = new THREE.DirectionalLight(0xe0e7ff, 0.45); // Soft cool fill from opposite side
+        fillLight.position.set(-65, 65, 45);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.35); // Subtle rim highlight for curvature
+        rimLight.position.set(0, 90, 70);
+        scene.add(rimLight);
+
+        // Architectural Ground Turntable Grid at z = 0
+        const gridHelper = new THREE.GridHelper(110, 22, 0x94a3b8, 0xe2e8f0);
+        gridHelper.rotation.x = Math.PI / 2;
+        scene.add(gridHelper);
+
+        // Subtle soft contact shadow disk on ground
+        const shadowCanvas = document.createElement('canvas');
+        shadowCanvas.width = 128;
+        shadowCanvas.height = 128;
+        const shadowCtx = shadowCanvas.getContext('2d');
+        const grad = shadowCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        grad.addColorStop(0, 'rgba(15, 23, 42, 0.18)');
+        grad.addColorStop(0.5, 'rgba(15, 23, 42, 0.06)');
+        grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+        shadowCtx.fillStyle = grad;
+        shadowCtx.fillRect(0, 0, 128, 128);
+        const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
+        const shadowMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(70, 70),
+            new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false })
+        );
+        shadowMesh.position.set(0, 0, -0.05);
+        scene.add(shadowMesh);
+
+        // Subtle horizontal base axes (X red, Y green)
+        const axesGroup = new THREE.Group();
+        const xLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-55, 0, 0), new THREE.Vector3(55, 0, 0)]);
+        const xLineMat = new THREE.LineBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
+        axesGroup.add(new THREE.Line(xLineGeo, xLineMat));
+
+        const yLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -55, 0), new THREE.Vector3(0, 55, 0)]);
+        const yLineMat = new THREE.LineBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.4 });
+        axesGroup.add(new THREE.Line(yLineGeo, yLineMat));
+        scene.add(axesGroup);
+
+        // Substantial Z-axis Spindle
+        let zSpindleMesh = null;
+        let originDot = null;
+        const zAxisGroup = new THREE.Group();
+
+        function updateSubstantialZAxis(totalHeight) {
+            while (zAxisGroup.children.length > 0) {
+                zAxisGroup.remove(zAxisGroup.children[0]);
+            }
+            const minZ = -3.0;
+            const maxZ = totalHeight + 5.0;
+            const length = maxZ - minZ;
+            const midZ = (minZ + maxZ) / 2.0;
+
+            const rodRadius = 0.28;
+            const rodGeo = new THREE.CylinderGeometry(rodRadius, rodRadius, length, 24);
+            rodGeo.rotateX(Math.PI / 2); // align along Z
+            const rodMat = new THREE.MeshStandardMaterial({
+                color: 0x475569,
+                roughness: 0.4,
+                metalness: 0.3
+            });
+            zSpindleMesh = new THREE.Mesh(rodGeo, rodMat);
+            zSpindleMesh.position.set(0, 0, midZ);
+            zAxisGroup.add(zSpindleMesh);
+
+            const dotGeo = new THREE.SphereGeometry(0.7, 16, 16);
+            const dotMat = new THREE.MeshBasicMaterial({ color: 0x475569 });
+            originDot = new THREE.Mesh(dotGeo, dotMat);
+            originDot.position.set(0, 0, 0);
+            zAxisGroup.add(originDot);
+        }
+        scene.add(zAxisGroup);
+
+        // =====================================================================
+        // 3D MATERIALS & MESH (REFINED INDUSTRIAL DESIGN PALETTE)
+        // =====================================================================
+        const materials = [
+            // 1. Architectural Cobalt Blue (Beloved signature color)
+            new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.32, metalness: 0.15, side: THREE.DoubleSide }),
+            // 2. Studio Architectural White (Matte Ceramic)
+            new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.32, metalness: 0.1, side: THREE.DoubleSide }),
+            // 3. Anodized Aerospace Titanium
+            new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.26, metalness: 0.55, side: THREE.DoubleSide }),
+            // 4. Obsidian Satin Onyx
+            new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.22, metalness: 0.3, side: THREE.DoubleSide }),
+            // 5. Champagne Satin Brass
+            new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.32, metalness: 0.45, side: THREE.DoubleSide }),
+            // 6. Surface Normals Iridescent
+            new THREE.MeshNormalMaterial({ side: THREE.DoubleSide })
+        ];
+        let currentMatIndex = 0;
+
+        let modelMesh = null;
+        let stemMesh = null;
+        let generatedBodyTriangles = [];
+        let generatedStemTriangles = [];
+
+        // =====================================================================
+        // MATHEMATICAL GENERATOR (DREIDEL BODY + SEPARATE STEM)
+        // =====================================================================
+        function compileMathExpr(exprStr) {
+            let s = exprStr.replace(/\^/g, '**');
+            try {
+                return new Function('t', `
+                    const pi = Math.PI, PI = Math.PI, e = Math.E, E = Math.E;
+                    const sin = Math.sin, cos = Math.cos, tan = Math.tan;
+                    const asin = Math.asin, acos = Math.acos, atan = Math.atan;
+                    const sqrt = Math.sqrt, abs = Math.abs, exp = Math.exp;
+                    const log = Math.log, pow = Math.pow;
+                    try {
+                        return Number(${s});
+                    } catch(err) {
+                        return 0;
+                    }
+                `);
+            } catch (e) {
+                return () => 0;
+            }
+        }
+
+        function generateMesh() {
+            const f00 = compileMathExpr(document.getElementById('m00').value);
+            const f01 = compileMathExpr(document.getElementById('m01').value);
+            const f10 = compileMathExpr(document.getElementById('m10').value);
+            const f11 = compileMathExpr(document.getElementById('m11').value);
+
+            // Determinant at t=0
+            try {
+                const det0 = f00(0) * f11(0) - f01(0) * f10(0);
+                document.getElementById('det-indicator').textContent = `det(0) = ${det0.toFixed(2)}`;
+                document.getElementById('det-indicator').style.color = Math.abs(det0) > 0.001 ? '#059669' : '#ea580c';
+                document.getElementById('det-indicator').style.background = Math.abs(det0) > 0.001 ? '#f0fdf4' : '#fff7ed';
+                document.getElementById('det-indicator').style.borderColor = Math.abs(det0) > 0.001 ? '#bbf7d0' : '#fed7aa';
+            } catch(e) {}
+
+            const tStart = parseFloat(document.getElementById('t-start').value) || 0.0;
+            const tEnd   = parseFloat(document.getElementById('t-end').value) || 1.0;
+            const R      = parseFloat(document.getElementById('radius').value) || 25.0;
+            const H      = parseFloat(document.getElementById('height').value) || 50.0;
+            const N      = parseInt(document.getElementById('slices-slider').value) || 200;
+
+            const isDreidel = document.getElementById('dreidel-enabled').checked;
+            const holeDia = parseFloat(document.getElementById('hole-dia').value) || 4.5;
+            const holeDepth = Math.min(parseFloat(document.getElementById('hole-depth').value) || 12.0, H * 0.85);
+            const taperAngle = parseFloat(document.getElementById('taper-angle').value) || 45.0;
+            const stemLength = parseFloat(document.getElementById('stem-length').value) || 28.0;
+            const clearance = parseFloat(document.getElementById('fit-clearance').value) || 0.2;
+            const rHole = Math.min(holeDia / 2.0, R * 0.45);
+            const rStem = Math.max(0.6, rHole - clearance);
+
+            // Support-free conical hole roof (angle from horizontal bed)
+            const coneAngleRad = (taperAngle * Math.PI) / 180.0;
+            const hCone = Math.max(0.4, rHole * Math.tan(coneAngleRad));
+            const dTotal = Math.min(holeDepth + hCone, H * 0.95);
+
+            // Base Equilateral Triangle centered at (0, 0) on z = 0
+            const baseAngles = [Math.PI / 2, Math.PI / 2 + 2 * Math.PI / 3, Math.PI / 2 + 4 * Math.PI / 3];
+            const baseVertices = baseAngles.map(th => [R * Math.cos(th), R * Math.sin(th)]);
+
+            // Compute Layers
+            const layers = [];
+            for (let k = 0; k < N; k++) {
+                let t = tStart + (k / (N - 1)) * (tEnd - tStart);
+                const m00 = f00(t), m01 = f01(t), m10 = f10(t), m11 = f11(t);
+
+                const layerPts = baseVertices.map(([x0, y0]) => {
+                    let xt = m00 * x0 + m01 * y0;
+                    let yt = m10 * x0 + m11 * y0;
+                    const zt = t * H;
+                    return [xt, yt, zt];
+                });
+                layers.push(layerPts);
+            }
+
+            const bodyTriangles = [];
+
+            // 1. Side faces (Lofting between adjacent layers)
+            for (let k = 0; k < N - 1; k++) {
+                const curr = layers[k];
+                const next = layers[k + 1];
+
+                for (let i = 0; i < 3; i++) {
+                    const j = (i + 1) % 3;
+                    const p_ik  = curr[i];
+                    const p_jk  = curr[j];
+                    const p_jk1 = next[j];
+                    const p_ik1 = next[i];
+
+                    const quad = [
+                        [p_ik, p_jk, p_jk1],
+                        [p_ik, p_jk1, p_ik1]
+                    ];
+
+                    for (let tri of quad) {
+                        let [a, b, c] = tri;
+                        const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+                        const v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+                        const n = [
+                            u[1] * v[2] - u[2] * v[1],
+                            u[2] * v[0] - u[0] * v[2],
+                            u[0] * v[1] - u[1] * v[0]
+                        ];
+                        const faceCenter = [
+                            (a[0] + b[0] + c[0]) / 3,
+                            (a[1] + b[1] + c[1]) / 3,
+                            (a[2] + b[2] + c[2]) / 3
+                        ];
+                        if (n[0] * faceCenter[0] + n[1] * faceCenter[1] < 0) {
+                            bodyTriangles.push({ a: a, b: c, c: b });
+                        } else {
+                            bodyTriangles.push({ a: a, b: b, c: c });
+                        }
+                    }
+                }
+            }
+
+            // 2. Base at z = 0
+            if (!isDreidel) {
+                // Solid Base Triangle
+                bodyTriangles.push({
+                    a: layers[0][0],
+                    b: layers[0][2],
+                    c: layers[0][1]
+                });
+            } else {
+                // Dreidel Socket with Support-Free Conical Roof
+                const M = 24;
+                const holeAngles = [];
+                for (let m = 0; m < M; m++) {
+                    holeAngles.push(Math.PI / 2 + 2 * Math.PI * m / M);
+                }
+
+                const hole0 = holeAngles.map(th => [rHole * Math.cos(th), rHole * Math.sin(th), 0.0]);
+                const holeD = holeAngles.map(th => [rHole * Math.cos(th), rHole * Math.sin(th), holeDepth]);
+
+                const P = Math.floor(M / 3);
+                for (let k = 0; k < 3; k++) {
+                    const A = layers[0][k];
+                    const B = layers[0][(k + 1) % 3];
+                    const sIdx = k * P;
+                    const mIdx = sIdx + Math.floor(P / 2);
+
+                    for (let i = sIdx; i < mIdx; i++) {
+                        bodyTriangles.push({
+                            a: A,
+                            b: hole0[i % M],
+                            c: hole0[(i + 1) % M]
+                        });
+                    }
+                    bodyTriangles.push({
+                        a: A,
+                        b: hole0[mIdx % M],
+                        c: B
+                    });
+                    for (let i = mIdx; i < sIdx + P; i++) {
+                        bodyTriangles.push({
+                            a: B,
+                            b: hole0[i % M],
+                            c: hole0[(i + 1) % M]
+                        });
+                    }
+                }
+
+                // Vertical Hole Wall
+                for (let m = 0; m < M; m++) {
+                    const mNext = (m + 1) % M;
+                    bodyTriangles.push({ a: hole0[m], b: holeD[mNext], c: hole0[mNext] });
+                    bodyTriangles.push({ a: hole0[m], b: holeD[m], c: holeD[mNext] });
+                }
+
+                // 45° Conical Roof (Zero Supports / Zero Bridging)
+                const apexCone = [0.0, 0.0, dTotal];
+                for (let m = 0; m < M; m++) {
+                    const mNext = (m + 1) % M;
+                    bodyTriangles.push({ a: holeD[m], b: apexCone, c: holeD[mNext] });
+                }
+            }
+
+            // 3. Top Cap (if not a sharp point)
+            const topLayer = layers[N - 1];
+            const d01 = Math.hypot(topLayer[0][0] - topLayer[1][0], topLayer[0][1] - topLayer[1][1]);
+            const d12 = Math.hypot(topLayer[1][0] - topLayer[2][0], topLayer[1][1] - topLayer[2][1]);
+            const d20 = Math.hypot(topLayer[2][0] - topLayer[0][0], topLayer[2][1] - topLayer[0][1]);
+            const topArea = 0.5 * Math.abs(
+                (topLayer[1][0] - topLayer[0][0]) * (topLayer[2][1] - topLayer[0][1]) -
+                (topLayer[2][0] - topLayer[0][0]) * (topLayer[1][1] - topLayer[0][1])
+            );
+
+            if (topArea > 0.05 && (d01 + d12 + d20) > 0.3) {
+                bodyTriangles.push({
+                    a: topLayer[0],
+                    b: topLayer[1],
+                    c: topLayer[2]
+                });
+            }
+
+            // 4. Separate Printable Stem Mesh (Positioned side-by-side on print bed)
+            const stemTriangles = [];
+            if (isDreidel) {
+                const M_stem = 24;
+                const xOffset = R + 14.0; // Place right next to dreidel body
+                const stemAngles = [];
+                for (let m = 0; m < M_stem; m++) {
+                    stemAngles.push(2 * Math.PI * m / M_stem);
+                }
+
+                // Lead-in chamfer matching taperAngle at insertion tip
+                const chamferH = Math.min(rStem * Math.tan(coneAngleRad), stemLength * 0.22);
+                const stemMidH = stemLength - chamferH;
+                const rTip = rStem * 0.45;
+
+                const botPts = stemAngles.map(th => [xOffset + rStem * Math.cos(th), rStem * Math.sin(th), 0.0]);
+                const midPts = stemAngles.map(th => [xOffset + rStem * Math.cos(th), rStem * Math.sin(th), stemMidH]);
+                const tipPts = stemAngles.map(th => [xOffset + rTip * Math.cos(th), rTip * Math.sin(th), stemLength]);
+
+                const cBot = [xOffset, 0.0, 0.0];
+                const cTop = [xOffset, 0.0, stemLength];
+
+                // Bottom flat bed base
+                for (let m = 0; m < M_stem; m++) {
+                    const mNext = (m + 1) % M_stem;
+                    stemTriangles.push({ a: cBot, b: botPts[m], c: botPts[mNext] });
+                }
+
+                // Main Cylindrical Shaft
+                for (let m = 0; m < M_stem; m++) {
+                    const mNext = (m + 1) % M_stem;
+                    stemTriangles.push({ a: botPts[m], b: midPts[m], c: midPts[mNext] });
+                    stemTriangles.push({ a: botPts[m], b: midPts[mNext], c: botPts[mNext] });
+                }
+
+                // Lead-in Chamfer Tip
+                for (let m = 0; m < M_stem; m++) {
+                    const mNext = (m + 1) % M_stem;
+                    stemTriangles.push({ a: midPts[m], b: tipPts[m], c: tipPts[mNext] });
+                    stemTriangles.push({ a: midPts[m], b: tipPts[mNext], c: midPts[mNext] });
+                }
+
+                // Top Tip Disc
+                for (let m = 0; m < M_stem; m++) {
+                    const mNext = (m + 1) % M_stem;
+                    stemTriangles.push({ a: cTop, b: tipPts[mNext], c: tipPts[m] });
+                }
+            }
+
+            return { bodyTriangles, stemTriangles };
+        }
+
+        function createBufferGeometry(triangles) {
+            const positions = new Float32Array(triangles.length * 9);
+            for (let i = 0; i < triangles.length; i++) {
+                const { a, b, c } = triangles[i];
+                positions[i * 9 + 0] = a[0];
+                positions[i * 9 + 1] = a[1];
+                positions[i * 9 + 2] = a[2];
+
+                positions[i * 9 + 3] = b[0];
+                positions[i * 9 + 4] = b[1];
+                positions[i * 9 + 5] = b[2];
+
+                positions[i * 9 + 6] = c[0];
+                positions[i * 9 + 7] = c[1];
+                positions[i * 9 + 8] = c[2];
+            }
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        function updateSceneMesh() {
+            const { bodyTriangles, stemTriangles } = generateMesh();
+            generatedBodyTriangles = bodyTriangles;
+            generatedStemTriangles = stemTriangles;
+
+            const H = parseFloat(document.getElementById('height').value) || 50.0;
+            const isDreidel = document.getElementById('dreidel-enabled').checked;
+
+            // Compute Bounding Box
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+            let minZ = Infinity, maxZ = -Infinity;
+
+            for (let tri of bodyTriangles) {
+                for (let pt of [tri.a, tri.b, tri.c]) {
+                    minX = Math.min(minX, pt[0]); maxX = Math.max(maxX, pt[0]);
+                    minY = Math.min(minY, pt[1]); maxY = Math.max(maxY, pt[1]);
+                    minZ = Math.min(minZ, pt[2]); maxZ = Math.max(maxZ, pt[2]);
+                }
+            }
+
+            // Update Dreidel Body Mesh
+            if (modelMesh) {
+                modelMesh.geometry.dispose();
+                modelMesh.geometry = createBufferGeometry(bodyTriangles);
+            } else {
+                modelMesh = new THREE.Mesh(createBufferGeometry(bodyTriangles), materials[currentMatIndex]);
+                scene.add(modelMesh);
+            }
+
+            // Update Separate Stem Mesh
+            if (stemMesh) {
+                stemMesh.geometry.dispose();
+                if (isDreidel && stemTriangles.length) {
+                    stemMesh.geometry = createBufferGeometry(stemTriangles);
+                    stemMesh.visible = true;
+                } else {
+                    stemMesh.visible = false;
+                }
+            } else if (isDreidel && stemTriangles.length) {
+                const stemMat = new THREE.MeshStandardMaterial({
+                    color: 0x475569, // Refined slate graphite
+                    roughness: 0.35,
+                    metalness: 0.25,
+                    side: THREE.DoubleSide
+                });
+                stemMesh = new THREE.Mesh(createBufferGeometry(stemTriangles), stemMat);
+                scene.add(stemMesh);
+            }
+
+            // Update the toned-down Z-axis spindle height
+            updateSubstantialZAxis(H);
+
+            // Update Stats UI
+            const totalFaces = bodyTriangles.length + (isDreidel ? stemTriangles.length : 0);
+            const totalVerts = (parseInt(document.getElementById('slices-slider').value) * 3) + (isDreidel ? 48 : 0);
+            document.getElementById('stat-faces').textContent = totalFaces.toLocaleString() + (isDreidel ? " (2 parts)" : "");
+            document.getElementById('stat-verts').textContent = totalVerts.toLocaleString();
+            document.getElementById('stat-w').textContent = (maxX - minX).toFixed(1) + ' mm';
+            document.getElementById('stat-d').textContent = (maxY - minY).toFixed(1) + ' mm';
+            document.getElementById('stat-h').textContent = (maxZ - minZ).toFixed(1) + ' mm';
+
+            controls.target.set(0, 0, H * 0.45);
+        }
+
+        function resetDreidelStandard() {
+            document.getElementById('hole-dia').value = '4.5';
+            document.getElementById('hole-depth').value = '12.0';
+            document.getElementById('taper-angle').value = '45.0';
+            document.getElementById('stem-length').value = '28.0';
+            document.getElementById('fit-clearance').value = '0.2';
+            updateSceneMesh();
+            showToast("Standard Dreidel stem & hole reset");
+        }
+
+        function applyPreset(m00, m01, m10, m11) {
+            document.getElementById('m00').value = m00;
+            document.getElementById('m01').value = m01;
+            document.getElementById('m10').value = m10;
+            document.getElementById('m11').value = m11;
+            updateSceneMesh();
+            showToast("Preset applied");
+        }
+
+        // =====================================================================
+        // EXPORTER: WAVEFRONT OBJ (Dual Objects: Dreidel_Body + Dreidel_Stem)
+        // =====================================================================
+        function downloadOBJ() {
+            if (!generatedBodyTriangles.length) return;
+            const m00 = document.getElementById('m00').value;
+            const m01 = document.getElementById('m01').value;
+            const m10 = document.getElementById('m10').value;
+            const m11 = document.getElementById('m11').value;
+            const isDreidel = document.getElementById('dreidel-enabled').checked;
+
+            const lines = [
+                "# Wavefront OBJ: 3D Dreidel Model with Press-In Stem",
+                `# Matrix: M(t) = [[${m00}, ${m01}], [${m10}, ${m11}]]`,
+                `# Height: ${document.getElementById('height').value} mm, Radius: ${document.getElementById('radius').value} mm`,
+                ""
+            ];
+
+            let vertexOffset = 0;
+
+            function appendObjectMesh(objName, triangles) {
+                lines.push(`o ${objName}`);
+                const vertexMap = new Map();
+                const uniqueVertices = [];
+                const faces = [];
+
+                function getIndex(pt) {
+                    const key = `${pt[0].toFixed(5)},${pt[1].toFixed(5)},${pt[2].toFixed(5)}`;
+                    if (!vertexMap.has(key)) {
+                        uniqueVertices.push(pt);
+                        vertexMap.set(key, vertexOffset + uniqueVertices.length);
+                    }
+                    return vertexMap.get(key);
+                }
+
+                for (let i = 0; i < triangles.length; i++) {
+                    const { a, b, c } = triangles[i];
+                    const i1 = getIndex(a);
+                    const i2 = getIndex(b);
+                    const i3 = getIndex(c);
+                    faces.push(`f ${i1} ${i2} ${i3}`);
+                }
+
+                for (let v of uniqueVertices) {
+                    lines.push(`v ${v[0].toFixed(5)} ${v[1].toFixed(5)} ${v[2].toFixed(5)}`);
+                }
+                lines.push("");
+                lines.push(...faces);
+                lines.push("");
+
+                vertexOffset += uniqueVertices.length;
+            }
+
+            // Object 1: Dreidel Body
+            appendObjectMesh("Dreidel_Body", generatedBodyTriangles);
+
+            // Object 2: Dreidel Press-In Stem (Cylinder on print bed)
+            if (isDreidel && generatedStemTriangles.length) {
+                appendObjectMesh("Dreidel_Stem", generatedStemTriangles);
+            }
+
+            const blob = new Blob([lines.join("\n")], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "dreidel_model.obj";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+            showToast("Downloaded dreidel_model.obj (2 parts)");
+        }
+
+        function copyPythonCode() {
+            const m00 = document.getElementById('m00').value;
+            const m01 = document.getElementById('m01').value;
+            const m10 = document.getElementById('m10').value;
+            const m11 = document.getElementById('m11').value;
+
+            const pyCode = `def matrix_M(t: float):\n    return [\n        [${m00}, ${m01}],\n        [${m10}, ${m11}]\n    ]`;
+            navigator.clipboard.writeText(pyCode).then(() => {
+                showToast("Python function copied");
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        // =====================================================================
+        // EVENT LISTENERS
+        // =====================================================================
+        ['m00', 'm01', 'm10', 'm11', 't-start', 't-end', 'radius', 'height', 'hole-dia', 'hole-depth', 'taper-angle', 'stem-length', 'fit-clearance'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', updateSceneMesh);
+        });
+
+        document.getElementById('dreidel-enabled').addEventListener('change', (e) => {
+            document.getElementById('dreidel-controls').style.opacity = e.target.checked ? '1' : '0.4';
+            document.getElementById('dreidel-controls').style.pointerEvents = e.target.checked ? 'auto' : 'none';
+            updateSceneMesh();
+        });
+
+        document.getElementById('slices-slider').addEventListener('input', (e) => {
+            document.getElementById('slices-val').textContent = e.target.value;
+            updateSceneMesh();
+        });
+
+        // Viewport bar listeners
+        document.getElementById('btn-wire').addEventListener('click', function() {
+            materials[currentMatIndex].wireframe = !materials[currentMatIndex].wireframe;
+            this.classList.toggle('active', materials[currentMatIndex].wireframe);
+        });
+
+        let autoSpin = true;
+        const spinBtn = document.getElementById('btn-spin');
+        spinBtn.addEventListener('click', function() {
+            autoSpin = !autoSpin;
+            this.classList.toggle('active', autoSpin);
+        });
+
+        document.getElementById('btn-mat').addEventListener('click', function() {
+            currentMatIndex = (currentMatIndex + 1) % materials.length;
+            if (modelMesh) modelMesh.material = materials[currentMatIndex];
+            const matNames = ["Cobalt Blue", "Matte White", "Aerospace Titanium", "Obsidian Onyx", "Champagne Brass", "Iridescent Normals"];
+            showToast(`Material: ${matNames[currentMatIndex]}`);
+        });
+
+        document.getElementById('btn-axis').addEventListener('click', function() {
+            zAxisGroup.visible = !zAxisGroup.visible;
+            this.classList.toggle('active', zAxisGroup.visible);
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', function() {
+            const H = parseFloat(document.getElementById('height').value) || 50.0;
+            camera.up.set(0, 0, 1);
+            camera.position.set(75, -95, 65);
+            controls.target.set(0, 0, H * 0.45);
+            controls.update();
+            if (modelMesh) modelMesh.rotation.set(0, 0, 0);
+            showToast("View reset to standard CAD perspective");
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initial Build & Animation Loop
+        updateSceneMesh();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (autoSpin && modelMesh) {
+                modelMesh.rotation.z += 0.0012;
+            }
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
